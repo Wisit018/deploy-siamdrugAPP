@@ -36,6 +36,18 @@ const maxRequestSize = process.env.MAX_REQUEST_SIZE || '10mb';
 app.use(express.json({ limit: maxRequestSize }));
 app.use(express.urlencoded({ extended: true, limit: maxRequestSize }));
 
+// Log request body for debugging workflow save
+app.use('/workflow/api/save-workflow', (req, res, next) => {
+  console.log('🔍 Workflow save request received:', {
+    method: req.method,
+    url: req.url,
+    bodySize: JSON.stringify(req.body).length,
+    hasCustomerData: !!req.body.customerData,
+    hasProductData: !!req.body.productData
+  });
+  next();
+});
+
 // Simple rate limiting (in-memory)
 const rateLimitMap = new Map();
 const RATE_LIMIT_WINDOW = parseInt(process.env.RATE_LIMIT_WINDOW) || 15 * 60 * 1000; // 15 minutes
@@ -70,8 +82,14 @@ const rateLimit = (req, res, next) => {
   next();
 };
 
-// Apply rate limiting to API routes
-app.use('/api', rateLimit);
+// Apply rate limiting to API routes (excluding workflow save)
+app.use('/api', (req, res, next) => {
+  // Skip rate limiting for workflow save API
+  if (req.path.includes('/workflow/api/save-workflow')) {
+    return next();
+  }
+  return rateLimit(req, res, next);
+});
 
 // Cleanup rate limit map every hour
 setInterval(() => {

@@ -537,6 +537,8 @@ router.get('/api/finance-options', async (req, res, next) => {
 // Save complete workflow data to legacy_deliveries
 router.post('/api/save-workflow', async (req, res, next) => {
   try {
+      console.log('🚀 Starting workflow save process...');
+      
       const { 
         customerData, 
         deliveryData, 
@@ -544,6 +546,20 @@ router.post('/api/save-workflow', async (req, res, next) => {
         productData, 
         paymentData 
       } = req.body;
+      
+      // Validate required data
+      if (!customerData) {
+        throw new Error('Missing customer data');
+      }
+      if (!productData || !productData.products || !Array.isArray(productData.products)) {
+        throw new Error('Missing or invalid product data');
+      }
+      if (!mediaChannelData) {
+        throw new Error('Missing media/channel data');
+      }
+      if (!paymentData) {
+        throw new Error('Missing payment data');
+      }
       
       // Debug: Log received data
       console.log('Received customerData:', customerData);
@@ -560,12 +576,24 @@ router.post('/api/save-workflow', async (req, res, next) => {
     const workDate = thaiDate.toISOString().split('T')[0];
     const workTime = thaiDate.toTimeString().split(' ')[0].substring(0, 8);
     
+    // Test database connection first
+    console.log('🔍 Testing database connection...');
+    try {
+      await pool.execute('SELECT 1');
+      console.log('✅ Database connection OK');
+    } catch (dbError) {
+      console.error('❌ Database connection failed:', dbError);
+      throw new Error('Database connection failed: ' + dbError.message);
+    }
+    
     // Get next delivery number from database
+    console.log('🔍 Getting next delivery number...');
     const [maxResult] = await pool.execute(
       'SELECT MAX(CAST(delivernum AS UNSIGNED)) as maxNum FROM legacy_deliveries WHERE delivernum REGEXP "^[0-9]+$"'
     );
     const nextNum = (maxResult[0]?.maxNum || 0) + 1;
     const deliverNum = nextNum.toString().padStart(10, '0'); // 10 หลักพร้อม 0 นำหน้า
+    console.log(`✅ Generated delivery number: ${deliverNum}`);
     
     // Calculate totals
     const subtotal = productData.products.reduce((sum, item) => 
@@ -957,16 +985,23 @@ router.post('/api/save-workflow', async (req, res, next) => {
       }
 
       // Insert all records
+      console.log(`🔍 Inserting ${recordsToInsert.length} records...`);
       const columns = Object.keys(deliveryRecord).map(col => `\`${col}\``).join(', ');
       const placeholders = Object.keys(deliveryRecord).map(() => '?').join(', ');
       
-      for (const record of recordsToInsert) {
-        const values = Object.values(record);
-        await pool.execute(
-          `INSERT INTO legacy_deliveries (${columns}) VALUES (${placeholders})`,
-          values
-        );
-        console.log(`Inserted record with datadesc: ${record.datadesc}, code: ${record.code}, title: ${record.title}`);
+      for (let i = 0; i < recordsToInsert.length; i++) {
+        const record = recordsToInsert[i];
+        try {
+          const values = Object.values(record);
+          await pool.execute(
+            `INSERT INTO legacy_deliveries (${columns}) VALUES (${placeholders})`,
+            values
+          );
+          console.log(`✅ Inserted record ${i + 1}/${recordsToInsert.length}: ${record.datadesc} - ${record.code} - ${record.title}`);
+        } catch (insertError) {
+          console.error(`❌ Failed to insert record ${i + 1}:`, insertError);
+          throw new Error(`Failed to insert record: ${insertError.message}`);
+        }
       }
 
     res.json({ 
