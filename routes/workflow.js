@@ -709,14 +709,8 @@ router.post('/api/save-workflow', async (req, res, next) => {
       msnid: '', // ค่าว่าง
       msnname: '', // ค่าว่าง
       handtimes: '', // ค่าว่าง
-      day: now.toLocaleDateString('en-US', { weekday: 'long' }), // วันทำรายการแบบ monday, tuesday, etc.
-      date: (() => {
-        const day = now.getDate().toString().padStart(2, '0');
-        const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-        const month = months[now.getMonth()];
-        const year = now.getFullYear().toString().slice(-2);
-        return `${day}-${month}-${year}`;
-      })(), // วันที่ทำรายการ 15-sep-25
+      day: workDate, // วันทำรายการในรูปแบบ YYYY-MM-DD
+      date: workDate, // วันที่ทำรายการในรูปแบบ YYYY-MM-DD ที่ MySQL รองรับ
       source: 5, // เก็บค่าทุกรายการคือ 5
       code: productData.products.length > 0 ? Number(productData.products[0].code) || 0 : 0, // code จากตารางของ product สินค้าที่เลือกไว้
       prdgroup: 0, // ค่า = 0
@@ -777,31 +771,23 @@ router.post('/api/save-workflow', async (req, res, next) => {
               // ใช้ข้อมูลจาก Step 2 ถ้ามี
               if (deliveryData.day) {
                 const deliveryDate = new Date(deliveryData.day);
-                return deliveryDate.toLocaleDateString('en-US', { weekday: 'long' });
+                return deliveryDate.toISOString().split('T')[0]; // ใช้รูปแบบ YYYY-MM-DD
               }
               // ถ้าไม่มีข้อมูลจาก Step 2 ให้ใช้ +1 วัน
               const tomorrow = new Date(now);
               tomorrow.setDate(tomorrow.getDate() + 1);
-              return tomorrow.toLocaleDateString('en-US', { weekday: 'long' });
+              return tomorrow.toISOString().split('T')[0]; // ใช้รูปแบบ YYYY-MM-DD
             })(), // วันส่งจาก Step 2 หรือ +1 วันถ้าไม่มีข้อมูล
             apptdate: (() => {
               // ใช้ข้อมูลจาก Step 2 ถ้ามี
               if (deliveryData.day) {
                 const deliveryDate = new Date(deliveryData.day);
-                const day = deliveryDate.getDate().toString().padStart(2, '0');
-                const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-                const month = months[deliveryDate.getMonth()];
-                const year = deliveryDate.getFullYear().toString().slice(-2);
-                return `${day}-${month}-${year}`;
+                return deliveryDate.toISOString().split('T')[0]; // ใช้รูปแบบ YYYY-MM-DD
               }
               // ถ้าไม่มีข้อมูลจาก Step 2 ให้ใช้ +1 วัน
               const tomorrow = new Date(now);
               tomorrow.setDate(tomorrow.getDate() + 1);
-              const day = tomorrow.getDate().toString().padStart(2, '0');
-              const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-              const month = months[tomorrow.getMonth()];
-              const year = tomorrow.getFullYear().toString().slice(-2);
-              return `${day}-${month}-${year}`;
+              return tomorrow.toISOString().split('T')[0]; // ใช้รูปแบบ YYYY-MM-DD
             })(), // วันที่ส่งจาก Step 2 หรือ +1 วันถ้าไม่มีข้อมูล
             appttime: deliveryData.timein || '16:00', // เวลาส่งจาก Step 2 หรือ 16:00 ถ้าไม่มีข้อมูล
       appttime1: '',
@@ -833,22 +819,22 @@ router.post('/api/save-workflow', async (req, res, next) => {
       apptremk2: '',
       aftdelical: false,
       aftdeliti: '',
-      aftdelida: '0000-00-00',
+      aftdelida: null, // ใช้ null แทน '0000-00-00'
       autobrt9: false,
-      autobrt9da: '0000-00-00',
+      autobrt9da: null, // ใช้ null แทน '0000-00-00'
       autobrt9ti: '',
       autobrt9by: '',
       deliver: false,
       deliverid: '',
-      deliverda: '0000-00-00',
+      deliverda: null, // ใช้ null แทน '0000-00-00'
       deliverti: '',
       deliverby: '',
       receive: false,
-      receiveda: '0000-00-00',
+      receiveda: null, // ใช้ null แทน '0000-00-00'
       receiveti: '',
       receiveby: '',
       update: false,
-      updateda: '0000-00-00',
+      updateda: null, // ใช้ null แทน '0000-00-00'
       updateti: '',
       updateby: '',
       finance: false,
@@ -858,13 +844,13 @@ router.post('/api/save-workflow', async (req, res, next) => {
       financeti: workTime, // เวลาที่บันทึกข้อมูล
       financeby: paymentData.accode || '', // ค่า accode ของตัวเลือกที่เลือกใน ประเภทการชำระเงิน step5/5
       prnorder: false,
-      prnorddate: '0000-00-00', // เก็บค่า 0000-00-00
+      prnorddate: null, // ใช้ null แทน '0000-00-00'
       prnordtime: '',
       prnpick: false,
-      prnpicdate: '0000-00-00', // เก็บค่า 0000-00-00
+      prnpicdate: null, // ใช้ null แทน '0000-00-00'
       prnpictime: '',
       prnsticker: false,
-      prnstidate: '0000-00-00', // เก็บค่า 0000-00-00
+      prnstidate: null, // ใช้ null แทน '0000-00-00'
       prnstitime: '', // เก็บค่าว่าง
       prnfinan: '', // เก็บค่าว่าง
       prnfindate: '', // เก็บค่าว่าง
