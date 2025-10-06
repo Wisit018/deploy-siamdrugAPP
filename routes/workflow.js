@@ -887,25 +887,25 @@ router.post('/api/save-workflow', async (req, res, next) => {
       prnstidate: null, // ใช้ null แทน '0000-00-00'
       prnstitime: '', // เก็บค่าว่าง
       prnfinan: 0, // ใช้ 0 แทน empty string สำหรับ integer field
-      prnfindate: '', // เก็บค่าว่าง
+      prnfindate: null, // ใช้ null แทน empty string สำหรับ date field
       prnfintime: '', // เก็บค่าว่าง
       payflag: 0, // ใช้ 0 สำหรับ logical field
-      paydate: '', // เก็บค่าว่าง
+      paydate: null, // ใช้ null แทน empty string สำหรับ date field
       paytime: '', // เก็บค่าว่าง
       delvflag: 0, // ใช้ 0 สำหรับ logical field
-      delvdate: '', // เก็บค่าว่าง
+      delvdate: null, // ใช้ null แทน empty string สำหรับ date field
       delvtime: '', // เก็บค่าว่าง
       taxinv: '', // เก็บค่าว่าง
       transfer: false, // เก็บค่าเป็น false โดยตั้งไว้เป็น false ไว้ก่อน
       scanflag: 0, // ใช้ 0 สำหรับ logical field
-      scandate: '', // เก็บค่าว่าง
+      scandate: null, // ใช้ null แทน empty string สำหรับ date field
       scantime: '', // เก็บค่าว่าง
       scanby: '', // เก็บค่าว่าง
       feed: 0, // ใช้ 0 สำหรับ logical field
       feedno: 0, // ใช้ 0 สำหรับ numeric field
       feedback: 0, // ใช้ 0 สำหรับ numeric field
       feeddesc: '', // เก็บค่าว่าง
-      feeddate: '', // เก็บค่าว่าง
+      feeddate: null, // ใช้ null แทน empty string สำหรับ date field
       feedtime: '', // เก็บค่าว่าง
       feedid: '', // เก็บค่าว่าง
       feedmemo: '',
@@ -924,7 +924,7 @@ router.post('/api/save-workflow', async (req, res, next) => {
       nkprint: '', // เก็บค่าว่าง
       nkprintd: '', // เก็บค่าว่าง
       nkprintt: '', // เก็บค่าว่าง
-      routedate: '', // เก็บค่าว่าง
+      routedate: null, // ใช้ null แทน empty string สำหรับ date field
       editno: '', // ค่าเริ่มต้นคือค่าว่าง แต่ถ้าหากรายการนี้มีการแก้ไข อยากให้รันเลขแก้ไข ให้บอกว่าเป็นการแก้ไข
       editflag: false,
       cnflag: false,
