@@ -479,7 +479,15 @@ app.get('/', requireAuth, (req, res) => {
   res.redirect('/workflow');
 });
 
-app.use('/workflow', requireAuth, workflowRouter);
+// Use requireApiAuth for API routes, requireAuth for page routes
+app.use('/workflow', (req, res, next) => {
+  // API routes should use requireApiAuth
+  if (req.path.startsWith('/api/')) {
+    return requireApiAuth(req, res, next);
+  }
+  // Page routes should use requireAuth
+  return requireAuth(req, res, next);
+}, workflowRouter);
 app.use('/dashboard', requireAuth, dashboardRouter);
 
 // Basic error handler
