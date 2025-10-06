@@ -538,6 +538,15 @@ router.get('/api/finance-options', async (req, res, next) => {
 router.post('/api/save-workflow', async (req, res, next) => {
   try {
       console.log('🚀 Starting workflow save process...');
+      console.log('🔍 Request details:', {
+        method: req.method,
+        url: req.url,
+        originalUrl: req.originalUrl,
+        path: req.path,
+        hasSession: !!req.session,
+        hasUser: !!(req.session && req.session.user),
+        sessionId: req.sessionID
+      });
       
       const { 
         customerData, 

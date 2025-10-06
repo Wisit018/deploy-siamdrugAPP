@@ -102,6 +102,13 @@ setInterval(() => {
 }, 60 * 60 * 1000);
 
 // Sessions (for demo/dev only; use persistent store in production)
+console.log('🔍 Session Configuration:', {
+  NODE_ENV: process.env.NODE_ENV,
+  SESSION_SECRET: process.env.SESSION_SECRET ? 'SET' : 'NOT_SET',
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+});
+
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'change_this_dev_secret',
@@ -110,7 +117,8 @@ app.use(
     cookie: { 
       httpOnly: true, 
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 1000 * 60 * 60 * 24 // 24 hours
+      maxAge: 1000 * 60 * 60 * 24, // 24 hours
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // Fix for Railway HTTPS
     },
     name: 'siamdrug.sid', // เปลี่ยนชื่อ cookie
   })
@@ -471,7 +479,20 @@ function requireAuth(req, res, next) {
 
 // API auth guard - returns JSON error instead of redirect
 function requireApiAuth(req, res, next) {
-  if (req.session && req.session.user) return next();
+  console.log('🔍 API Auth Check:', {
+    hasSession: !!req.session,
+    hasUser: !!(req.session && req.session.user),
+    sessionId: req.sessionID,
+    path: req.path,
+    method: req.method
+  });
+  
+  if (req.session && req.session.user) {
+    console.log('✅ API Auth: User authenticated');
+    return next();
+  }
+  
+  console.log('❌ API Auth: Authentication required');
   res.status(401).json({ error: 'Authentication required' });
 }
 
