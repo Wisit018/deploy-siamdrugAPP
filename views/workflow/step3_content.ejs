@@ -1,0 +1,630 @@
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
+  <div>
+    <h1 class="h4 fw-semibold mb-1">ขั้นตอนที่ 3/5 – เลือกสื่อและช่องทาง</h1>
+    <p class="text-muted mb-0">กรุณาเลือกสื่อ (Media) และช่องทาง (Channel) ที่ใช้ในรายการนี้ หรือเพิ่มตัวเลือกใหม่ได้ทันที</p>
+  </div>
+  <a class="btn btn-outline-secondary" href="/workflow/step2?customerId=<%= customerId %>">ย้อนกลับข้อมูลการจัดส่ง</a>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header">สรุปข้อมูลจัดส่งที่เลือก</div>
+  <div class="card-body" data-delivery-summary>
+    <div class="text-muted">กำลังโหลดข้อมูลจากขั้นตอนก่อนหน้า...</div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-12 col-xl-6">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <strong>รายการสื่อ (Media)</strong>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-media-refresh>รีเฟรช</button>
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <label class="form-label" for="mediaSelect">เลือกสื่อ</label>
+          <select class="form-select" id="mediaSelect" data-media-select>
+            <option value="" disabled selected>คลิกเพื่อโหลดรายการสื่อ</option>
+          </select>
+          <div class="form-text text-muted" data-media-status>ยังไม่ได้โหลดรายการ</div>
+        </div>
+      </div>
+      <div class="card-footer">
+        <form class="row g-2" data-media-form>
+          <div class="col-12 col-sm-4">
+            <input type="text" name="mediaid" class="form-control" placeholder="รหัส (ไม่บังคับ)" maxlength="50">
+          </div>
+          <div class="col-12 col-sm-8">
+            <input type="text" name="medianame" class="form-control" placeholder="ชื่อสื่อ *" required maxlength="255">
+          </div>
+          <div class="col-12">
+            <textarea name="remark" class="form-control" rows="2" placeholder="หมายเหตุ"></textarea>
+          </div>
+          <div class="col-12 d-grid d-sm-flex gap-2 justify-content-end">
+            <button type="submit" class="btn btn-success" data-media-submit>เพิ่มสื่อใหม่</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-xl-6">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <strong>รายการช่องทาง (Channel)</strong>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-channel-refresh>รีเฟรช</button>
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <label class="form-label" for="channelSelect">เลือกช่องทาง</label>
+          <select class="form-select" id="channelSelect" data-channel-select>
+            <option value="" disabled selected>คลิกเพื่อโหลดรายการช่องทาง</option>
+          </select>
+          <div class="form-text text-muted" data-channel-status>ยังไม่ได้โหลดรายการ</div>
+        </div>
+      </div>
+      <div class="card-footer">
+        <form class="row g-2" data-channel-form>
+          <div class="col-12 col-sm-4">
+            <input type="text" name="channelid" class="form-control" placeholder="รหัส (ไม่บังคับ)" maxlength="50">
+          </div>
+          <div class="col-12 col-sm-8">
+            <input type="text" name="channelname" class="form-control" placeholder="ชื่อช่องทาง *" required maxlength="255">
+          </div>
+          <div class="col-12">
+            <textarea name="remark" class="form-control" rows="2" placeholder="หมายเหตุ"></textarea>
+          </div>
+          <div class="col-12 d-grid d-sm-flex gap-2 justify-content-end">
+            <button type="submit" class="btn btn-success" data-channel-submit>เพิ่มช่องทางใหม่</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mt-4">
+  <div class="card-header">ข้อมูลเพิ่มเติม</div>
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-12">
+        <label class="form-label" for="keywordInput">Keyword</label>
+        <textarea class="form-control" id="keywordInput" data-keyword-input rows="3" placeholder="ระบุ Keyword สำหรับแคมเปญนี้"></textarea>
+        <div class="form-text text-muted">ข้อมูลจะบันทึกเมื่อจบครบทุกขั้นตอน</div>
+      </div>
+      <div class="col-12 col-sm-6 col-lg-4">
+        <label class="form-label" for="followUpInput">ติดตามผลใน</label>
+        <div class="input-group">
+          <input type="number" class="form-control" id="followUpInput" data-followup-input min="0" step="1" placeholder="เช่น 7">
+          <span class="input-group-text">วัน</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="d-flex justify-content-end gap-2 mt-4">
+  <button type="button" class="btn btn-primary" data-step3-next disabled>ไปขั้นตอนถัดไป</button>
+</div>
+
+<script>
+  (function(){
+    const customerId = '<%= customerId %>';
+    const deliveryKey = 'workflow.selectedDelivery';
+    const selectionKey = 'workflow.mediaChannelSelection';
+
+    const deliverySummaryEl = document.querySelector('[data-delivery-summary]');
+    const mediaSelect = document.querySelector('[data-media-select]');
+    const channelSelect = document.querySelector('[data-channel-select]');
+    const mediaStatusEl = document.querySelector('[data-media-status]');
+    const channelStatusEl = document.querySelector('[data-channel-status]');
+    const keywordInput = document.querySelector('[data-keyword-input]');
+    const followUpInput = document.querySelector('[data-followup-input]');
+    const mediaForm = document.querySelector('[data-media-form]');
+    const channelForm = document.querySelector('[data-channel-form]');
+    const mediaRefreshBtn = document.querySelector('[data-media-refresh]');
+    const channelRefreshBtn = document.querySelector('[data-channel-refresh]');
+    const nextBtn = document.querySelector('[data-step3-next]');
+
+    function setStatus(element, message) {
+      if (element) {
+        element.textContent = message;
+      }
+    }
+
+    function updateNextButtonState() {
+      if (!nextBtn) return;
+      const canProceed = !!(state.media.selectedId && state.channel.selectedId);
+      if (canProceed) {
+        nextBtn.removeAttribute('disabled');
+      } else {
+        nextBtn.setAttribute('disabled', 'disabled');
+      }
+    }
+
+    let deliverySelection = null;
+    try {
+      const raw = sessionStorage.getItem(deliveryKey);
+      if (raw) {
+        deliverySelection = JSON.parse(raw);
+      }
+    } catch (err) {
+      // ignore parse errors
+    }
+
+    if (!deliverySelection || !deliverySelection.delivery) {
+      if (deliverySummaryEl) {
+        deliverySummaryEl.innerHTML = '<div class="text-danger">ไม่พบข้อมูลจากขั้นตอนก่อนหน้า กรุณากลับไปเลือกข้อมูลการจัดส่ง</div>';
+      }
+    }
+
+    const state = {
+      media: { options: [], selectedId: null, loaded: false, loading: false },
+      channel: { options: [], selectedId: null, loaded: false, loading: false },
+      keyword: '',
+      followUpDays: '',
+      savedSelection: (function(){
+        try {
+          const raw = sessionStorage.getItem(selectionKey);
+          return raw ? JSON.parse(raw) : null;
+        } catch (err) {
+          return null;
+        }
+      })()
+    };
+
+    if (state.savedSelection && state.savedSelection.mediaId) {
+      state.media.selectedId = String(state.savedSelection.mediaId);
+    }
+    if (state.savedSelection) {
+      if (state.savedSelection.channelId) {
+        state.channel.selectedId = String(state.savedSelection.channelId);
+      } else if (Array.isArray(state.savedSelection.channelIds) && state.savedSelection.channelIds.length) {
+        state.channel.selectedId = String(state.savedSelection.channelIds[0]);
+      }
+    }
+
+    if (state.savedSelection && typeof state.savedSelection.keyword === 'string') {
+      state.keyword = state.savedSelection.keyword;
+    }
+    if (state.savedSelection) {
+      const rawFollowUp = state.savedSelection.followUpDays;
+      if (rawFollowUp !== undefined && rawFollowUp !== null && rawFollowUp !== '') {
+        state.followUpDays = String(rawFollowUp);
+      }
+    }
+
+    function renderDeliverySummary() {
+      if (!deliverySummaryEl) {
+        return;
+      }
+      const delivery = deliverySelection && deliverySelection.delivery && deliverySelection.delivery.data;
+      if (!delivery) {
+        deliverySummaryEl.innerHTML = '<div class="text-danger">ไม่พบข้อมูลจัดส่งที่เลือกไว้</div>';
+        return;
+      }
+      const date = delivery.day || delivery.workdate || '';
+      const time = delivery.timein || delivery.worktime || '';
+      const recipient = delivery.deliverto || 'ไม่ระบุ';
+      const phone = delivery.appttel || delivery.mobiletel || '-';
+      const addressParts = [
+        delivery.addr1,
+        delivery.addr2,
+        delivery.homenum1,
+        delivery.mooban1,
+        delivery.soi1,
+        delivery.road1,
+        delivery.kwang1,
+        delivery.kate1,
+        delivery.province1,
+        delivery.zipcode1
+      ].filter(Boolean);
+      const address = addressParts.join(' ');
+      const html = [
+        '<dl class="row mb-0">',
+        '<dt class="col-sm-3">วันเวลา</dt><dd class="col-sm-9">' + (date || '-') + ' ' + (time || '') + '</dd>',
+        '<dt class="col-sm-3">ผู้รับ</dt><dd class="col-sm-9">' + recipient + '</dd>',
+        '<dt class="col-sm-3">โทรศัพท์</dt><dd class="col-sm-9">' + phone + '</dd>',
+        '<dt class="col-sm-3">ที่อยู่</dt><dd class="col-sm-9">' + (address || '-') + '</dd>',
+        '</dl>'
+      ].join('');
+      deliverySummaryEl.innerHTML = html;
+    }
+
+    function renderMediaOptions() {
+      if (!mediaSelect) {
+        return;
+      }
+      if (!state.media.options.length) {
+        mediaSelect.innerHTML = '<option value="" disabled>ยังไม่มีข้อมูลสื่อ</option>';
+        mediaSelect.selectedIndex = -1;
+        return;
+      }
+      const currentId = state.media.selectedId ? String(state.media.selectedId) : null;
+      const items = state.media.options.map(function(item){
+        const value = String(item.id);
+        const pieces = [];
+        pieces.push(item.medianame || '-');
+        if (item.mediaid) {
+          pieces.push('(' + item.mediaid + ')');
+        }
+        if (item.remark) {
+          pieces.push('- ' + item.remark);
+        }
+        const text = pieces.join(' ');
+        const selectedAttr = currentId === value ? ' selected' : '';
+        return '<option value="' + value + '"' + selectedAttr + '>' + text + '</option>';
+      });
+      if (!currentId) {
+        items.unshift('<option value="" disabled selected>เลือกสื่อ</option>');
+      }
+      mediaSelect.innerHTML = items.join('');
+      if (currentId) {
+        mediaSelect.value = currentId;
+      }
+    }
+
+    function renderChannelOptions() {
+      if (!channelSelect) {
+        return;
+      }
+      if (!state.channel.options.length) {
+        channelSelect.innerHTML = '<option value="" disabled>ยังไม่มีข้อมูลช่องทาง</option>';
+        channelSelect.selectedIndex = -1;
+        return;
+      }
+      const currentId = state.channel.selectedId ? String(state.channel.selectedId) : null;
+      const items = state.channel.options.map(function(item){
+        const value = String(item.id);
+        const pieces = [];
+        pieces.push(item.channelname || '-');
+        if (item.channelid) {
+          pieces.push('(' + item.channelid + ')');
+        }
+        if (item.remark) {
+          pieces.push('- ' + item.remark);
+        }
+        const text = pieces.join(' ');
+        const selectedAttr = currentId === value ? ' selected' : '';
+        return '<option value="' + value + '"' + selectedAttr + '>' + text + '</option>';
+      });
+      if (!currentId) {
+        items.unshift('<option value="" disabled selected>เลือกช่องทาง</option>');
+      }
+      channelSelect.innerHTML = items.join('');
+      if (currentId) {
+        channelSelect.value = currentId;
+      }
+    }
+
+    function renderExtraFields() {
+      if (keywordInput) {
+        keywordInput.value = state.keyword || '';
+      }
+      if (followUpInput) {
+        followUpInput.value = state.followUpDays || '';
+      }
+    }
+
+    function persistSelection() {
+      try {
+        const keywordValue = (state.keyword || '').trim();
+        const followUpRaw = typeof state.followUpDays === 'string' ? state.followUpDays.trim() : state.followUpDays;
+        let followUpDays = null;
+        if (followUpRaw !== '' && followUpRaw !== null && followUpRaw !== undefined) {
+          const numeric = Number(followUpRaw);
+          followUpDays = Number.isFinite(numeric) && numeric >= 0 ? numeric : null;
+        }
+        const payload = {
+          mediaId: state.media.selectedId,
+          channelId: state.channel.selectedId,
+          keyword: keywordValue,
+          followUpDays: followUpDays
+        };
+        sessionStorage.setItem(selectionKey, JSON.stringify(payload));
+      } catch (err) {
+        // ignore storage errors
+      }
+    }
+
+    async function loadMediaOptions(options) {
+      if (!mediaSelect) {
+        return;
+      }
+      const opts = options || {};
+      if (state.media.loading) {
+        return;
+      }
+      if (state.media.loaded && !opts.force) {
+        return;
+      }
+      state.media.loading = true;
+      setStatus(mediaStatusEl, 'กำลังโหลดรายการ...');
+      mediaSelect.innerHTML = '<option value="" disabled selected>กำลังโหลด...</option>';
+      mediaSelect.setAttribute('data-loading', 'true');
+      try {
+        const res = await fetch('/workflow/api/media-options');
+        if (!res.ok) {
+          const message = await res.text();
+          throw new Error(message || 'โหลดข้อมูลสื่อไม่สำเร็จ');
+        }
+        const data = await res.json();
+        state.media.options = Array.isArray(data) ? data : [];
+        state.media.loaded = true;
+        if (state.media.selectedId) {
+          const exists = state.media.options.some(function(item){
+            return String(item.id) === String(state.media.selectedId);
+          });
+          if (!exists) {
+            state.media.selectedId = null;
+          }
+        }
+        if (!state.media.selectedId && opts.selectFirstIfEmpty && state.media.options.length) {
+          state.media.selectedId = String(state.media.options[0].id);
+        }
+        renderMediaOptions();
+        setStatus(mediaStatusEl, state.media.options.length ? 'พบ ' + state.media.options.length + ' รายการ' : 'ยังไม่มีข้อมูลสื่อ');
+        persistSelection();
+        updateNextButtonState();
+      } catch (err) {
+        setStatus(mediaStatusEl, err && err.message ? err.message : 'โหลดข้อมูลสื่อไม่สำเร็จ');
+        mediaSelect.innerHTML = '<option value="" disabled selected>ไม่สามารถโหลดข้อมูลสื่อ</option>';
+        state.media.loaded = false;
+      } finally {
+        mediaSelect.removeAttribute('data-loading');
+        state.media.loading = false;
+      }
+    }
+
+    async function loadChannelOptions(options) {
+      if (!channelSelect) {
+        return;
+      }
+      const opts = options || {};
+      if (state.channel.loading) {
+        return;
+      }
+      if (state.channel.loaded && !opts.force) {
+        return;
+      }
+      state.channel.loading = true;
+      setStatus(channelStatusEl, 'กำลังโหลดรายการ...');
+      channelSelect.innerHTML = '<option value="" disabled selected>กำลังโหลด...</option>';
+      channelSelect.setAttribute('data-loading', 'true');
+      try {
+        const res = await fetch('/workflow/api/channel-options');
+        if (!res.ok) {
+          const message = await res.text();
+          throw new Error(message || 'โหลดข้อมูลช่องทางไม่สำเร็จ');
+        }
+        const data = await res.json();
+        state.channel.options = Array.isArray(data) ? data : [];
+        state.channel.loaded = true;
+        if (state.channel.selectedId) {
+          const exists = state.channel.options.some(function(item){
+            return String(item.id) === String(state.channel.selectedId);
+          });
+          if (!exists) {
+            state.channel.selectedId = null;
+          }
+        }
+        if (!state.channel.selectedId && opts.selectFirstIfEmpty && state.channel.options.length) {
+          state.channel.selectedId = String(state.channel.options[0].id);
+        }
+        renderChannelOptions();
+        setStatus(channelStatusEl, state.channel.options.length ? 'พบ ' + state.channel.options.length + ' รายการ' : 'ยังไม่มีข้อมูลช่องทาง');
+        persistSelection();
+        updateNextButtonState();
+      } catch (err) {
+        setStatus(channelStatusEl, err && err.message ? err.message : 'โหลดข้อมูลช่องทางไม่สำเร็จ');
+        channelSelect.innerHTML = '<option value="" disabled selected>ไม่สามารถโหลดข้อมูลช่องทาง</option>';
+        state.channel.loaded = false;
+      } finally {
+        channelSelect.removeAttribute('data-loading');
+        state.channel.loading = false;
+      }
+    }
+
+    if (mediaSelect) {
+      mediaSelect.addEventListener('focus', function(){
+        loadMediaOptions();
+      });
+      mediaSelect.addEventListener('click', function(){
+        loadMediaOptions();
+      });
+      mediaSelect.addEventListener('change', function(event){
+        const value = event.target.value;
+        state.media.selectedId = value ? String(value) : null;
+        persistSelection();
+        updateNextButtonState();
+      });
+    }
+
+    if (channelSelect) {
+      channelSelect.addEventListener('focus', function(){
+        loadChannelOptions();
+      });
+      channelSelect.addEventListener('click', function(){
+        loadChannelOptions();
+      });
+      channelSelect.addEventListener('change', function(event){
+        const value = event.target.value;
+        state.channel.selectedId = value ? String(value) : null;
+        persistSelection();
+        updateNextButtonState();
+      });
+    }
+
+    if (keywordInput) {
+      keywordInput.addEventListener('input', function(event){
+        state.keyword = event.target.value || '';
+        persistSelection();
+      });
+    }
+
+    if (followUpInput) {
+      followUpInput.addEventListener('input', function(event){
+        if (typeof event.target.value === 'string') {
+          const sanitized = event.target.value.replace(/[^0-9]/g, '');
+          if (sanitized !== event.target.value) {
+            event.target.value = sanitized;
+          }
+          state.followUpDays = sanitized;
+        } else {
+          state.followUpDays = '';
+        }
+        persistSelection();
+      });
+      followUpInput.addEventListener('blur', function(event){
+        const value = typeof event.target.value === 'string' ? event.target.value.trim() : '';
+        if (value === '') {
+          state.followUpDays = '';
+          persistSelection();
+        }
+      });
+    }
+
+    if (mediaForm) {
+      mediaForm.addEventListener('submit', async function(event){
+        event.preventDefault();
+        const formData = new FormData(mediaForm);
+        const payload = {};
+        formData.forEach(function(value, key){
+          if (typeof value === 'string') {
+            const trimmed = value.trim();
+            payload[key] = trimmed === '' ? null : trimmed;
+          } else {
+            payload[key] = value;
+          }
+        });
+        if (!payload.medianame) {
+          alert('กรุณาระบุชื่อสื่อ');
+          return;
+        }
+        const submitBtn = mediaForm.querySelector('[data-media-submit]');
+        if (submitBtn) {
+          submitBtn.setAttribute('disabled', 'disabled');
+        }
+        try {
+          const res = await fetch('/workflow/api/media-options', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (!res.ok) {
+            const message = await res.text();
+            throw new Error(message || 'เพิ่มข้อมูลสื่อไม่สำเร็จ');
+          }
+          mediaForm.reset();
+          state.media.loaded = false;
+          state.media.selectedId = null;
+          updateNextButtonState();
+          await loadMediaOptions({ force: true, selectFirstIfEmpty: true });
+        } catch (err) {
+          alert(err && err.message ? err.message : 'เกิดข้อผิดพลาดในการเพิ่มข้อมูลสื่อ');
+        } finally {
+          const submitBtnFinal = mediaForm.querySelector('[data-media-submit]');
+          if (submitBtnFinal) {
+            submitBtnFinal.removeAttribute('disabled');
+          }
+        }
+      });
+    }
+
+    if (channelForm) {
+      channelForm.addEventListener('submit', async function(event){
+        event.preventDefault();
+        const formData = new FormData(channelForm);
+        const payload = {};
+        formData.forEach(function(value, key){
+          if (typeof value === 'string') {
+            const trimmed = value.trim();
+            payload[key] = trimmed === '' ? null : trimmed;
+          } else {
+            payload[key] = value;
+          }
+        });
+        if (!payload.channelname) {
+          alert('กรุณาระบุชื่อช่องทาง');
+          return;
+        }
+        const submitBtn = channelForm.querySelector('[data-channel-submit]');
+        if (submitBtn) {
+          submitBtn.setAttribute('disabled', 'disabled');
+        }
+        try {
+          const res = await fetch('/workflow/api/channel-options', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (!res.ok) {
+            const message = await res.text();
+            throw new Error(message || 'เพิ่มข้อมูลช่องทางไม่สำเร็จ');
+          }
+          channelForm.reset();
+          state.channel.loaded = false;
+          state.channel.selectedId = null;
+          await loadChannelOptions({ force: true, selectFirstIfEmpty: true });
+        } catch (err) {
+          alert(err && err.message ? err.message : 'เกิดข้อผิดพลาดในการเพิ่มข้อมูลช่องทาง');
+        } finally {
+          const submitBtnFinal = channelForm.querySelector('[data-channel-submit]');
+          if (submitBtnFinal) {
+            submitBtnFinal.removeAttribute('disabled');
+          }
+        }
+      });
+    }
+
+    if (mediaRefreshBtn) {
+      mediaRefreshBtn.addEventListener('click', function(){
+        loadMediaOptions({ force: true });
+      });
+    }
+
+    if (channelRefreshBtn) {
+      channelRefreshBtn.addEventListener('click', function(){
+        loadChannelOptions({ force: true });
+      });
+    }
+
+    if (nextBtn) {
+      nextBtn.addEventListener('click', function(){
+        if (!state.media.selectedId) {
+          if (!state.media.loaded) {
+            alert('กรุณาโหลดและเลือกสื่ออย่างน้อย 1 รายการ');
+          } else {
+            alert('กรุณาเลือกสื่ออย่างน้อย 1 รายการ');
+          }
+          return;
+        }
+        if (!state.channel.selectedId) {
+          if (!state.channel.loaded) {
+            alert('กรุณาโหลดและเลือกช่องทางอย่างน้อย 1 รายการ');
+          } else {
+            alert('กรุณาเลือกช่องทางอย่างน้อย 1 รายการ');
+          }
+          return;
+        }
+        persistSelection();
+        let targetUrl = '/workflow/step4';
+        if (customerId) {
+          targetUrl = '/workflow/step4?customerId=' + encodeURIComponent(customerId);
+        }
+        window.location.href = targetUrl;
+      });
+    }
+
+    renderDeliverySummary();
+    renderExtraFields();
+    updateNextButtonState();
+
+    if (state.media.selectedId) {
+      loadMediaOptions();
+    }
+    if (state.channel.selectedId) {
+      loadChannelOptions();
+    }
+  })();
+</script>

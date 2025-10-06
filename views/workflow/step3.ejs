@@ -1,0 +1,8 @@
+<% const pageTitle = title || 'สร้างรายการใหม่ – เลือกสื่อ'; %>
+<%- include('../layout', {
+  title: pageTitle,
+  body: include('./step3_content', {
+    customerId,
+  })
+}) %>
+

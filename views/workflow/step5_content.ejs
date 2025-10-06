@@ -1,0 +1,440 @@
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
+  <div>
+    <h1 class="h4 fw-semibold mb-1">ขั้นตอนที่ 5/5 – ข้อมูลการชำระเงิน</h1>
+    <p class="text-muted mb-0">เลือกวิธีชำระเงิน กรอกข้อมูลธุรกรรม และตรวจสอบยอดสุทธิ</p>
+  </div>
+  <a class="btn btn-outline-secondary" href="/workflow/step4?customerId=<%= customerId %>">ย้อนกลับไปขั้นตอน 4/5</a>
+  </div>
+
+<div class="row g-3 mb-4">
+  <div class="col-12 col-xl-4">
+    <div class="card h-100">
+      <div class="card-header">สรุปรายการสินค้าและค่าจัดส่ง</div>
+      <div class="card-body small" data-step5-order-summary>
+        <div class="text-muted">กำลังโหลดข้อมูลจากขั้นตอนที่ 4...</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-xl-8">
+    <div class="card h-100">
+      <div class="card-header">วิธีชำระเงิน</div>
+      <div class="card-body">
+        <form class="row g-3" data-step5-payment-form>
+          
+          <div class="col-12 col-lg-6">
+            <label class="form-label">ประเภทการชำระเงิน</label>
+            <div class="d-flex gap-2 align-items-center">
+              <button type="button" class="btn btn-outline-primary" data-step5-finance-toggle>กดเลือก</button>
+              <select class="form-select d-none" name="payType" data-step5-finance-select required>
+                <option value="" selected disabled>เลือกวิธีชำระเงิน</option>
+              </select>
+            </div>
+            <div class="form-text text-muted" data-step5-finance-status>ยังไม่ได้เลือก</div>
+          </div>
+          
+
+          <div class="col-12 col-lg-4">
+            <label class="form-label">ธนาคาร</label>
+            <input type="text" class="form-control" name="bankCode" placeholder="เช่น 003" data-auto-bankcode>
+          </div>
+          <div class="col-12 col-lg-4">
+            <label class="form-label">สาขา</label>
+            <input type="text" class="form-control" name="bankBranch" placeholder="เช่น สุรวงศ์" data-auto-bankbranch>
+          </div>
+          <div class="col-12 col-lg-4">
+            <label class="form-label">เลขที่บัญชี</label>
+            <input type="text" class="form-control" name="bankAccount" placeholder="เช่น 125-0-03676-1" data-auto-bankaccount>
+          </div>
+
+          <div class="col-12 col-lg-4">
+            <label class="form-label">บัตรเครดิต</label>
+            <input type="text" class="form-control" name="creditIssuer" placeholder="ชื่อธนาคาร/ผู้ออกบัตร">
+          </div>
+          <div class="col-12 col-lg-4">
+            <label class="form-label">เลขที่บัตร</label>
+            <input type="text" class="form-control" name="creditNo" placeholder="XXXX-XXXX-XXXX-XXXX" maxlength="23">
+          </div>
+          <div class="col-6 col-lg-2">
+            <label class="form-label">หมดอายุ เดือน</label>
+            <input type="text" class="form-control" name="expMonth" placeholder="MM" maxlength="2">
+          </div>
+          <div class="col-6 col-lg-2">
+            <label class="form-label">หมดอายุ ปี</label>
+            <input type="text" class="form-control" name="expYear" placeholder="YY" maxlength="2">
+          </div>
+          <div class="col-12 col-lg-2">
+            <label class="form-label">รหัส 3 ตัว</label>
+            <input type="password" class="form-control" name="cvv" placeholder="CVV" maxlength="3">
+          </div>
+
+          <div class="col-12">
+            <label class="form-label">หมายเหตุเพิ่มเติม</label>
+            <textarea class="form-control" rows="2" name="remark" placeholder="รายละเอียดอื่น ๆ"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="card-footer d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="text-muted small">ตรวจสอบข้อมูลให้ถูกต้องก่อนกด Finish</div>
+        <div class="d-flex gap-2">
+          <a class="btn btn-outline-secondary" href="/workflow/step4?customerId=<%= customerId %>">ย้อนกลับ</a>
+          <button type="button" class="btn btn-success" data-step5-finish disabled>Finish</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function(){
+    const orderKey = 'workflow.step4Draft';
+    const finishBtn = document.querySelector('[data-step5-finish]');
+    const summaryEl = document.querySelector('[data-step5-order-summary]');
+    
+    const paymentForm = document.querySelector('[data-step5-payment-form]');
+    const financeToggleBtn = document.querySelector('[data-step5-finance-toggle]');
+    const financeSelect = document.querySelector('[data-step5-finance-select]');
+    const financeStatus = document.querySelector('[data-step5-finance-status]');
+    const autoBankCode = document.querySelector('[data-auto-bankcode]');
+    const autoBankBranch = document.querySelector('[data-auto-bankbranch]');
+    const autoBankAccount = document.querySelector('[data-auto-bankaccount]');
+
+    function format(num){
+      const n = Number(num) || 0;
+      return new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+    }
+
+    function renderSummary(){
+      let state = null;
+      try {
+        const raw = sessionStorage.getItem(orderKey);
+        state = raw ? JSON.parse(raw) : null;
+      } catch(e) { state = null; }
+      if (!state || !Array.isArray(state.products)) {
+        summaryEl.innerHTML = '<div class="text-danger">ไม่พบข้อมูลจากขั้นตอนที่ 4</div>';
+        if (finishBtn) finishBtn.setAttribute('disabled','disabled');
+        return;
+      }
+      const subtotal = state.products.reduce((s,i)=> s + (Number(i.price)||0)*(Number(i.qty)||0), 0);
+      const discount = state.products.reduce((s,i)=> s + (Number(i.discount)||0), 0);
+      const shipping = state.shipping && state.shipping.noCharge ? 0 : Number(state.shipping && state.shipping.shippingCost) || 0;
+      const total = Math.max(subtotal - discount + shipping, 0);
+
+      const lines = [
+        '<dl class="row mb-0">',
+        '<dt class="col-sm-5">จำนวนสินค้า</dt><dd class="col-sm-7">' + state.products.length + ' รายการ</dd>',
+        '<dt class="col-sm-5">ยอดรวมสินค้า</dt><dd class="col-sm-7">' + format(subtotal) + '</dd>',
+        '<dt class="col-sm-5">ส่วนลดรวม</dt><dd class="col-sm-7">' + format(discount) + '</dd>',
+        '<dt class="col-sm-5">ค่าจัดส่ง</dt><dd class="col-sm-7">' + format(shipping) + '</dd>',
+        '<dt class="col-sm-5">ยอดสุทธิ</dt><dd class="col-sm-7 fw-semibold">' + format(total) + '</dd>',
+        '</dl>'
+      ];
+      summaryEl.innerHTML = lines.join('');
+      if (finishBtn) finishBtn.removeAttribute('disabled');
+    }
+
+    if (finishBtn) {
+      finishBtn.addEventListener('click', async function(){
+        try {
+          finishBtn.disabled = true;
+          finishBtn.textContent = 'กำลังบันทึก...';
+          
+          // Collect all workflow data from sessionStorage
+          const customerData = await getCustomerData();
+          const deliveryData = getDeliveryData();
+          const mediaChannelData = await getMediaChannelData();
+          const productData = getProductData();
+          const paymentData = await getPaymentData();
+          
+          // Debug: Log all data being sent
+          console.log('Customer data being sent:', customerData);
+          console.log('Delivery data being sent:', deliveryData);
+          console.log('Media/Channel data being sent:', mediaChannelData);
+          console.log('Product data being sent:', productData);
+          console.log('Payment data being sent:', paymentData);
+          
+          // Debug shipping data specifically
+          console.log('Shipping data details:', productData.shipping);
+          console.log('Shipping cost:', productData.shipping?.shippingCost);
+          console.log('No charge flag:', productData.shipping?.noCharge);
+          
+          // Send to save API
+          const response = await fetch('/workflow/api/save-workflow', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              customerData,
+              deliveryData,
+              mediaChannelData,
+              productData,
+              paymentData
+            })
+          });
+          
+          const result = await response.json();
+          
+          if (result.success) {
+            let message = `บันทึกข้อมูลสำเร็จ!\nหมายเลขการจัดส่ง: ${result.deliverNum}\nยอดรวม: ${format(result.total)} บาท\nสร้าง ${result.recordsCreated} รายการ`;
+            
+            if (result.records && result.records.length > 0) {
+              message += '\n\nรายการที่สร้าง:';
+              result.records.forEach((record, index) => {
+                message += `\n${index + 1}. ${record.datadesc} - ${record.title} (${record.code}) - ${format(record.amount)} บาท`;
+              });
+            }
+            
+            alert(message);
+            // Clear session storage
+            sessionStorage.removeItem('workflow.step4Draft');
+            sessionStorage.removeItem('workflow.selectedDelivery');
+            sessionStorage.removeItem('workflow.mediaChannelSelection');
+            sessionStorage.removeItem('workflow.paymentSelection');
+            // Redirect to dashboard
+            window.location.href = '/dashboard';
+          } else {
+            throw new Error(result.error || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+          }
+        } catch (error) {
+          console.error('Save error:', error);
+          alert('เกิดข้อผิดพลาด: ' + error.message);
+        } finally {
+          finishBtn.disabled = false;
+          finishBtn.textContent = 'Finish';
+        }
+      });
+    }
+    
+    async function getCustomerData() {
+      // Get customer data from URL parameter
+      const urlParams = new URLSearchParams(window.location.search);
+      const customerId = urlParams.get('customerId');
+      
+      if (!customerId) {
+        console.warn('No customer ID found in URL');
+        return { customerid: null };
+      }
+      
+      try {
+        // Fetch full customer data from API
+        const response = await fetch(`/workflow/api/customers/${encodeURIComponent(customerId)}/deliveries`);
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Customer data from API:', data.customer);
+          return data.customer;
+        } else {
+          console.warn('Failed to fetch customer data:', response.status);
+          return { customerid: customerId };
+        }
+      } catch (error) {
+        console.warn('Error fetching customer data:', error);
+        return { customerid: customerId };
+      }
+    }
+    
+    function getDeliveryData() {
+      try {
+        const raw = sessionStorage.getItem('workflow.selectedDelivery');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          return parsed.delivery?.data || {};
+        }
+      } catch (e) {
+        console.warn('Could not parse delivery data from session');
+      }
+      return {};
+    }
+    
+    async function getMediaChannelData() {
+      try {
+        const raw = sessionStorage.getItem('workflow.mediaChannelSelection');
+        if (raw) {
+          const selection = JSON.parse(raw);
+          
+          // Fetch media and channel names from API
+          const responses = await Promise.all([
+            fetch('/workflow/api/media-options'),
+            fetch('/workflow/api/channel-options'),
+          ]);
+          
+          let mediaName = '';
+          let channelName = '';
+          
+          if (responses[0].ok) {
+            const mediaRows = await responses[0].json();
+            const foundMedia = mediaRows.find(function(item){ 
+              return String(item.id) === String(selection.mediaId); 
+            });
+            if (foundMedia) {
+              mediaName = foundMedia.medianame || foundMedia.mediaid || '';
+            }
+          }
+          
+          if (responses[1].ok) {
+            const channelRows = await responses[1].json();
+            const foundChannel = channelRows.find(function(item){ 
+              return String(item.id) === String(selection.channelId); 
+            });
+            if (foundChannel) {
+              channelName = foundChannel.channelname || foundChannel.channelid || '';
+            }
+          }
+          
+          return {
+            mediaId: selection.mediaId,
+            mediaName: mediaName,
+            channelId: selection.channelId,
+            channelName: channelName,
+            keyword: selection.keyword,
+            followUpDays: selection.followUpDays
+          };
+        }
+      } catch (e) {
+        console.warn('Could not parse media/channel data from session');
+      }
+      return {};
+    }
+    
+    function getProductData() {
+      try {
+        const raw = sessionStorage.getItem('workflow.step4Draft');
+        if (raw) {
+          return JSON.parse(raw);
+        }
+      } catch (e) {
+        console.warn('Could not parse product data from session');
+      }
+      return { products: [], shipping: {} };
+    }
+    
+    async function getPaymentData() {
+      try {
+        const raw = sessionStorage.getItem('workflow.paymentSelection');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          
+          // Fetch bank details from finance options if financetype is available
+          let bankNo = '';
+          let bankNa = '';
+          let bankBr = '';
+          let bankAc = '';
+          
+          if (parsed.financetype) {
+            try {
+              const response = await fetch('/workflow/api/finance-options');
+              if (response.ok) {
+                const financeOptions = await response.json();
+                const selectedFinance = financeOptions.find(option => 
+                  String(option.financetype) === String(parsed.financetype)
+                );
+                if (selectedFinance) {
+                  bankNo = selectedFinance.bankno || '';
+                  bankNa = selectedFinance.bankna || '';
+                  bankBr = selectedFinance.bankbr || '';
+                  bankAc = selectedFinance.bankac || '';
+                }
+              }
+            } catch (err) {
+              console.warn('Could not fetch bank details:', err);
+            }
+          }
+          
+          return {
+            payType: parsed.financetype || '',
+            payDesc: parsed.financedes || '',
+            payType1: '',
+            subPay1: '',
+            subPay2: '',
+            cusBankNo: '',
+            cusBankNa: '',
+            cusBankBr: '',
+            cusBankAc: '',
+            cusBankRef: '',
+            credit: false,
+            creditType: '',
+            creditDesc: '',
+            creditNo: '',
+            creditExpM: '',
+            creditExpY: '',
+            creditRef: '',
+            last3Digit: '',
+            bankNo: bankNo,
+            bankNa: bankNa,
+            bankBr: bankBr,
+            bankAc: bankAc,
+            bankRef: '',
+            financeType: parsed.financetype || '', // เก็บค่า financetype
+            financeDesc: parsed.financedes || '', // เก็บค่า financedes
+            remark: ''
+          };
+        }
+      } catch (e) {
+        console.warn('Could not parse payment data from session');
+      }
+      return {};
+    }
+
+    async function loadFinanceOptions(){
+      try {
+        const res = await fetch('/workflow/api/finance-options');
+        if (!res.ok) throw new Error(await res.text() || 'โหลดข้อมูลล้มเหลว');
+        const rows = await res.json();
+        const selectOptions = ['<option value="" disabled selected>เลือกวิธีชำระเงิน</option>'];
+        rows.forEach(function(r){
+          const type = (r.financetype ?? '');
+          const des = (r.financedes ? String(r.financedes).replace(/&/g,'&amp;').replace(/</g,'&lt;') : '-');
+          const gtype = (r.fingrptype ?? '');
+          const gdesc = (r.fingrpdesc ? String(r.fingrpdesc).replace(/&/g,'&amp;').replace(/</g,'&lt;') : '-');
+          const bankno = r.bankno || '';
+          const bankna = r.bankna || r.bankname || '';
+          const bankbr = r.bankbr || r.bankbranch || '';
+          const bankac = r.bankac || r.accountno || '';
+          const optionText = [String(type || '-'), des].filter(Boolean).join(' - ');
+          const optionData = {
+            t: String(type),
+            d: des,
+            gt: String(gtype || ''),
+            bno: String(bankno || ''),
+            bna: String(bankna || ''),
+            bbr: String(bankbr || ''),
+            bac: String(bankac || ''),
+          };
+          selectOptions.push('<option value="'+ String(type) +'" data-meta="'+ encodeURIComponent(JSON.stringify(optionData)) +'">'+ optionText +'</option>');
+        });
+        if (financeSelect) {
+          financeSelect.innerHTML = selectOptions.join('');
+          financeSelect.disabled = false;
+        }
+      } catch(err){
+        if (financeStatus) financeStatus.textContent = err && err.message ? err.message : 'โหลดข้อมูลล้มเหลว';
+      }
+    }
+
+    if (financeToggleBtn && financeSelect) {
+      financeToggleBtn.addEventListener('click', function(){
+        const isHidden = financeSelect.classList.contains('d-none');
+        financeSelect.classList.toggle('d-none', !isHidden);
+        if (isHidden) financeSelect.focus();
+      });
+      financeSelect.addEventListener('change', function(){
+        const selected = financeSelect.options[financeSelect.selectedIndex];
+        const metaRaw = selected ? selected.getAttribute('data-meta') : '';
+        let meta = null;
+        try { meta = metaRaw ? JSON.parse(decodeURIComponent(metaRaw)) : null; } catch(e) { meta = null; }
+        if (meta) {
+          if (financeStatus) financeStatus.textContent = meta.d || 'เลือกแล้ว';
+          sessionStorage.setItem('workflow.paymentSelection', JSON.stringify({ financetype: meta.t, fingrptype: meta.gt, financedes: meta.d }));
+          if (autoBankCode) autoBankCode.value = meta.bno || '';
+          if (autoBankBranch) autoBankBranch.value = meta.bbr || '';
+          if (autoBankAccount) autoBankAccount.value = meta.bac || '';
+          if (finishBtn) finishBtn.removeAttribute('disabled');
+        }
+      });
+    }
+
+    renderSummary();
+    loadFinanceOptions();
+  })();
+</script>
+
+

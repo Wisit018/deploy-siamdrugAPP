@@ -1,0 +1,7 @@
+<% const pageTitle = title || 'สร้างรายการใหม่ – เลือกสินค้าและการขนส่ง'; %>
+<%- include('../layout', {
+  title: pageTitle,
+  body: include('./step4_content', {
+    customerId,
+  })
+}) %>

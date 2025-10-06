@@ -1,0 +1,10 @@
+<% const pageTitle = title || 'สร้างรายการใหม่ – เลือกลูกค้า'; %>
+<%- include('../layout', {
+  title: pageTitle,
+  body: include('./step_customers_content', {
+    customersApi: '/api/legacy/customers',
+    nextStepUrl: '/workflow/step2',
+    salesRepOptions: salesRepOptions || []
+  })
+}) %>
+

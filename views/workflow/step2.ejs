@@ -1,0 +1,8 @@
+<% const pageTitle = title || 'สร้างรายการใหม่ – ขั้นตอนที่ 2'; %>
+<%- include('../layout', {
+  title: pageTitle,
+  body: include('./step2_content', {
+    customerId: customerId || ''
+  })
+}) %>
+

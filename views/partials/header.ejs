@@ -1,0 +1,48 @@
+﻿<header>
+  <div class="px-3 py-2 bg-body-tertiary border-bottom">
+    <div class="container">
+      <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">
+        <a href="/" class="d-flex align-items-center my-2 my-lg-0 me-lg-auto text-decoration-none link-body-emphasis">
+          <i class="bi bi-bootstrap-fill fs-2 me-2" aria-hidden="true"></i>
+          <span class="fw-semibold">Siamdrug</span>
+        </a>
+
+        <ul class="nav col-12 col-lg-auto my-2 justify-content-center my-md-0 text-small gap-1">
+          <li class="nav-item">
+            <a href="/" class="nav-link d-flex flex-column align-items-center text-center px-3 fw-bold home-link">
+              <i class="bi bi-list-check fs-5 mb-1"></i>
+              <span>เวิร์กโฟลว์</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/dashboard" class="nav-link d-flex flex-column align-items-center text-center px-3">
+              <i class="bi bi-speedometer2 fs-5 mb-1"></i>
+              <span>แดชบอร์ด</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="px-3 py-2 border-bottom mb-3">
+    <div class="container d-flex flex-wrap justify-content-center">
+      <form class="col-12 col-lg-auto mb-2 mb-lg-0 me-lg-auto" role="search">
+        <input type="search" class="form-control" placeholder="ค้นหา..." aria-label="ค้นหา">
+      </form>
+
+      <div class="text-end d-flex flex-wrap align-items-center gap-2 justify-content-center justify-content-lg-end">
+        <button type="button" class="btn btn-outline-secondary me-2" data-toggle-theme>
+          <i class="bi bi-moon-stars me-1" data-theme-icon></i>
+          <span class="d-none d-sm-inline">ธีม</span>
+        </button>
+        <% if (user) { %>
+          <span class="me-2">สวัสดี, <%= user.operator %> (<%= user.level %>)</span>
+          <a href="/logout" class="btn btn-outline-primary">ออกจากระบบ</a>
+        <% } else { %>
+          <a href="/login" class="btn btn-outline-primary me-2">เข้าสู่ระบบ</a>
+          <a href="/register" class="btn btn-primary">สมัครสมาชิก</a>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</header>
