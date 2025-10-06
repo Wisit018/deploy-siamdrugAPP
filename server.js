@@ -52,10 +52,19 @@ app.use((req, res, next) => {
 });
 
 // Health check
-app.get('/health', async (req, res) => {
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
+// Database health check (separate endpoint)
+app.get('/health/db', async (req, res) => {
   try {
     await pool.query('SELECT 1');
-    res.json({ status: 'ok' });
+    res.json({ status: 'ok', database: 'connected' });
   } catch (err) {
     res.status(500).json({ status: 'error', error: err.message });
   }
@@ -333,26 +342,40 @@ async function bootstrap() {
 
 function startServer(port, attemptsLeft) {
   const server = app.listen(port, HOST, () => {
-    console.log(`Server running on http://${HOST}:${port}`);
+    console.log(`🚀 Server running on http://${HOST}:${port}`);
+    console.log(`📊 Health check available at: http://${HOST}:${port}/health`);
+    console.log(`🗄️  Database health check: http://${HOST}:${port}/health/db`);
   });
 
   server.on('error', (err) => {
     if (err.code === 'EADDRINUSE' && attemptsLeft > 0) {
-      console.log(`Port ${port} is in use, trying ${port + 1}...`);
+      console.log(`⚠️  Port ${port} is in use, trying ${port + 1}...`);
       startServer(port + 1, attemptsLeft - 1);
     } else {
-      console.error('Failed to start server:', err);
+      console.error('❌ Failed to start server:', err);
       process.exit(1);
     }
   });
+
+  // Handle process termination gracefully
+  process.on('SIGTERM', () => {
+    console.log('📝 SIGTERM received, shutting down gracefully');
+    server.close(() => {
+      console.log('✅ Server closed');
+      process.exit(0);
+    });
+  });
 }
 
-// Start the server
+// Start the server first, then bootstrap database
+startServer(DEFAULT_PORT, MAX_PORT_RETRIES);
+
+// Bootstrap database in background (non-blocking)
 bootstrap()
   .then(() => {
-    startServer(DEFAULT_PORT, MAX_PORT_RETRIES);
+    console.log('✅ Database bootstrap completed successfully');
   })
   .catch((err) => {
-    console.error('Bootstrap failed:', err);
-    process.exit(1);
+    console.error('❌ Database bootstrap failed:', err.message);
+    console.log('⚠️  App will continue running without database initialization');
   });
