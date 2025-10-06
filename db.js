@@ -8,13 +8,18 @@ const config = {
   database: process.env.MYSQL_DATABASE || process.env.DB_NAME || 'test',
   port: Number(process.env.MYSQL_PORT || process.env.DB_PORT || 3306),
   waitForConnections: true,
-  connectionLimit: Number(process.env.DB_POOL_LIMIT || 10),
-  queueLimit: 0,
+  connectionLimit: Number(process.env.DB_POOL_LIMIT || 25), // เพิ่มจาก 10 เป็น 25
+  queueLimit: 100, // เพิ่ม queue limit
+  acquireTimeout: 60000, // เพิ่ม acquire timeout
+  timeout: 60000, // เพิ่ม query timeout
+  reconnect: true, // เปิดใช้งาน reconnect
+  idleTimeout: 300000, // 5 นาที idle timeout
   // Railway MySQL specific configurations
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  // Remove invalid MySQL2 options
-  // acquireTimeout: 60000,  // Invalid option
-  // timeout: 60000,         // Invalid option
+  // เพิ่มการตั้งค่าสำหรับ performance
+  multipleStatements: false,
+  dateStrings: false,
+  debug: process.env.NODE_ENV === 'development' ? ['ComProtocolPacket'] : false,
 };
 
 console.log('🔍 Environment Variables Debug:');

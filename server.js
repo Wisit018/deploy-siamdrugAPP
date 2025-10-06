@@ -31,9 +31,57 @@ app.set('views', path.join(__dirname, 'views'));
 // Static files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Parsers
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Request size limits and parsing
+const maxRequestSize = process.env.MAX_REQUEST_SIZE || '10mb';
+app.use(express.json({ limit: maxRequestSize }));
+app.use(express.urlencoded({ extended: true, limit: maxRequestSize }));
+
+// Simple rate limiting (in-memory)
+const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW = parseInt(process.env.RATE_LIMIT_WINDOW) || 15 * 60 * 1000; // 15 minutes
+const RATE_LIMIT_MAX = parseInt(process.env.RATE_LIMIT_MAX) || 100; // 100 requests per window
+
+const rateLimit = (req, res, next) => {
+  const clientId = req.ip || req.connection.remoteAddress;
+  const now = Date.now();
+  
+  if (!rateLimitMap.has(clientId)) {
+    rateLimitMap.set(clientId, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return next();
+  }
+  
+  const clientData = rateLimitMap.get(clientId);
+  
+  if (now > clientData.resetTime) {
+    clientData.count = 1;
+    clientData.resetTime = now + RATE_LIMIT_WINDOW;
+    return next();
+  }
+  
+  if (clientData.count >= RATE_LIMIT_MAX) {
+    return res.status(429).json({
+      error: 'Too Many Requests',
+      message: 'Rate limit exceeded. Please try again later.',
+      retryAfter: Math.ceil((clientData.resetTime - now) / 1000)
+    });
+  }
+  
+  clientData.count++;
+  next();
+};
+
+// Apply rate limiting to API routes
+app.use('/api', rateLimit);
+
+// Cleanup rate limit map every hour
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, value] of rateLimitMap.entries()) {
+    if (now > value.resetTime) {
+      rateLimitMap.delete(key);
+    }
+  }
+}, 60 * 60 * 1000);
 
 // Sessions (for demo/dev only; use persistent store in production)
 app.use(
@@ -41,9 +89,44 @@ app.use(
     secret: process.env.SESSION_SECRET || 'change_this_dev_secret',
     resave: false,
     saveUninitialized: false,
-    cookie: { httpOnly: true, secure: false, maxAge: 1000 * 60 * 60 * 24 },
+    cookie: { 
+      httpOnly: true, 
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 1000 * 60 * 60 * 24 // 24 hours
+    },
+    name: 'siamdrug.sid', // เปลี่ยนชื่อ cookie
   })
 );
+
+// Simple in-memory cache for frequently accessed data
+const cache = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+const getCachedData = (key) => {
+  const item = cache.get(key);
+  if (item && Date.now() - item.timestamp < CACHE_TTL) {
+    return item.data;
+  }
+  cache.delete(key);
+  return null;
+};
+
+const setCachedData = (key, data) => {
+  cache.set(key, {
+    data,
+    timestamp: Date.now()
+  });
+};
+
+// Cache cleanup every 10 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, value] of cache.entries()) {
+    if (now - value.timestamp > CACHE_TTL) {
+      cache.delete(key);
+    }
+  }
+}, 10 * 60 * 1000);
 
 // Expose current user to views
 app.use((req, res, next) => {
@@ -70,12 +153,15 @@ app.get('/health/db', async (req, res) => {
   }
 });
 
-// API endpoint for dashboard deliveries
+// API endpoint for dashboard deliveries with pagination
 app.get('/api/deliveries', async (req, res) => {
   try {
     const date = req.query.date || new Date().toISOString().split('T')[0];
+    const page = parseInt(req.query.page) || 1;
+    const limit = Math.min(parseInt(req.query.limit) || 50, 100); // จำกัดสูงสุด 100
+    const offset = (page - 1) * limit;
     
-    // Get all deliveries from database
+    // Optimized query with pagination and JOIN to avoid N+1 problem
     const [deliveries] = await pool.execute(`
       SELECT 
         d.id,
@@ -109,16 +195,27 @@ app.get('/api/deliveries', async (req, res) => {
         d.workdate,
         d.worktime,
         d.created_at,
-        0 as previous_purchases
+        COUNT(p.id) as product_count
       FROM legacy_deliveries d
-      WHERE DATE(d.apptdate) = ? OR ? = ''
+      LEFT JOIN legacy_deliveries p ON d.delivernum = p.delivernum AND p.datadesc IN ('ขาย', 'ของแถม')
+      WHERE (DATE(d.apptdate) = ? OR ? = '') AND d.datadesc = 'ขาย'
+      GROUP BY d.id
       ORDER BY d.delivernum DESC
+      LIMIT ? OFFSET ?
+    `, [date, date, limit, offset]);
+
+    // Get total count for pagination
+    const [countResult] = await pool.execute(`
+      SELECT COUNT(*) as total 
+      FROM legacy_deliveries 
+      WHERE (DATE(apptdate) = ? OR ? = '') AND datadesc = 'ขาย'
     `, [date, date]);
 
-    // Get products for all deliveries
-    const deliveryIds = deliveries.map(d => d.id);
+    // Get products for delivered items only (optimized)
+    const deliveryNums = deliveries.map(d => d.delivernum);
     let products = [];
-    if (deliveryIds.length > 0) {
+    if (deliveryNums.length > 0) {
+      const placeholders = deliveryNums.map(() => '?').join(',');
       const [productRows] = await pool.execute(`
         SELECT 
           delivernum,
@@ -129,15 +226,28 @@ app.get('/api/deliveries', async (req, res) => {
           amount,
           datadesc
         FROM legacy_deliveries 
-        WHERE id IN (${deliveryIds.map(() => '?').join(',')})
-        ORDER BY delivernum, id
-      `, deliveryIds);
+        WHERE delivernum IN (${placeholders}) AND datadesc IN ('ขาย', 'ของแถม', 'ค่าส่ง')
+        ORDER BY delivernum, 
+          CASE datadesc 
+            WHEN 'ขาย' THEN 1 
+            WHEN 'ค่าส่ง' THEN 2 
+            WHEN 'ของแถม' THEN 3 
+            ELSE 4 
+          END
+      `, deliveryNums);
       products = productRows;
     }
 
     res.json({
       deliveries,
-      products
+      products,
+      pagination: {
+        page,
+        limit,
+        total: countResult[0].total,
+        totalPages: Math.ceil(countResult[0].total / limit),
+        hasMore: offset + limit < countResult[0].total
+      }
     });
   } catch (err) {
     console.error('Error fetching deliveries:', err);
@@ -145,9 +255,53 @@ app.get('/api/deliveries', async (req, res) => {
   }
 });
 
+// Cached API endpoint for option tables (frequently accessed)
+app.get('/api/options/:table', async (req, res) => {
+  try {
+    const table = req.params.table;
+    const cacheKey = `options_${table}`;
+    
+    // Check cache first
+    const cachedData = getCachedData(cacheKey);
+    if (cachedData) {
+      return res.json(cachedData);
+    }
+    
+    // Valid option tables
+    const validTables = ['media', 'channel', 'finance', 'shipping', 'coupon', 'products'];
+    if (!validTables.includes(table)) {
+      return res.status(400).json({ error: 'Invalid table name' });
+    }
+    
+    const [rows] = await pool.execute(`SELECT * FROM legacy_${table} ORDER BY ${table === 'products' ? 'title' : `${table}name`}`);
+    
+    const data = {
+      success: true,
+      data: rows,
+      cached_at: new Date().toISOString()
+    };
+    
+    // Cache the result
+    setCachedData(cacheKey, data);
+    
+    res.json(data);
+  } catch (err) {
+    console.error(`Error fetching ${req.params.table} options:`, err);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to fetch options data',
+      message: err.message 
+    });
+  }
+});
+
 // API endpoint to get all deliveries without date filter
 app.get('/api/deliveries/all', async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = Math.min(parseInt(req.query.limit) || 100, 200);
+    const offset = (page - 1) * limit;
+    
     let deliveries = [];
     let products = [];
     
@@ -311,13 +465,55 @@ app.use('/workflow', requireAuth, workflowRouter);
 app.use('/dashboard', requireAuth, dashboardRouter);
 
 // Basic error handler
-// eslint-disable-next-line no-unused-vars
+// Enhanced error handling with logging
 app.use((err, req, res, next) => {
-  console.error(err);
+  const timestamp = new Date().toISOString();
+  const errorInfo = {
+    timestamp,
+    method: req.method,
+    url: req.originalUrl,
+    userAgent: req.get('User-Agent'),
+    ip: req.ip || req.connection.remoteAddress,
+    message: err.message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  };
+  
+  console.error('🚨 Application Error:', errorInfo);
+  
+  // Log database connection errors specifically
+  if (err.code === 'ECONNREFUSED' || err.code === 'PROTOCOL_CONNECTION_LOST') {
+    console.error('💾 Database connection error detected');
+  }
+  
+  // Send appropriate error response
   if (req.headers.accept && req.headers.accept.includes('application/json')) {
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong',
+      timestamp
+    });
   } else {
-    res.status(500).render('error', { error: err.message });
+    res.status(500).render('error', { 
+      error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+    });
+  }
+});
+
+// 404 handler
+app.use((req, res) => {
+  const timestamp = new Date().toISOString();
+  console.warn(`⚠️  404 Not Found: ${req.method} ${req.originalUrl} - ${req.ip}`);
+  
+  if (req.headers.accept && req.headers.accept.includes('application/json')) {
+    res.status(404).json({
+      error: 'Not Found',
+      message: 'The requested resource was not found',
+      timestamp
+    });
+  } else {
+    res.status(404).render('error', {
+      error: 'The page you are looking for does not exist.'
+    });
   }
 });
 

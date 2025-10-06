@@ -7,10 +7,14 @@ const router = express.Router();
 // Get deliveries table reference
 const deliveriesTable = legacyTables.find((t) => t.key === 'deliveries');
 
-// Dashboard route
+// Dashboard route with optimized queries
 router.get('/', async (req, res, next) => {
   try {
-    // Get deliveries data from legacy_deliveries table
+    const page = parseInt(req.query.page) || 1;
+    const limit = 20; // แสดงแค่ 20 รายการต่อหน้า
+    const offset = (page - 1) * limit;
+    
+    // Optimized query with pagination
     const fields = [
       'id',
       'delivernum',
@@ -40,26 +44,47 @@ router.get('/', async (req, res, next) => {
       'emailaddr'
     ];
     
+    // Get paginated deliveries
     const [rows] = await pool.query(
-      `SELECT ${fields.join(', ')} FROM \`${deliveriesTable.tableName}\` ORDER BY id DESC LIMIT 100`
+      `SELECT ${fields.join(', ')} FROM \`${deliveriesTable.tableName}\` 
+       ORDER BY id DESC LIMIT ? OFFSET ?`,
+      [limit, offset]
     );
     
-    // Calculate summary statistics
-    const totalRecords = rows.length;
-    const salesRecords = rows.filter(d => d.datadesc === 'ขาย').length;
-    const shippingRecords = rows.filter(d => d.datadesc === 'ค่าส่ง').length;
-    const freeRecords = rows.filter(d => d.datadesc === 'ของแถม').length;
-    const totalAmount = rows.reduce((sum, d) => sum + parseFloat(d.total || 0), 0);
+    // Get total count for pagination
+    const [countResult] = await pool.query(
+      `SELECT COUNT(*) as total FROM \`${deliveriesTable.tableName}\``
+    );
+    
+    // Get summary statistics (optimized with single query)
+    const [summaryResult] = await pool.query(`
+      SELECT 
+        COUNT(*) as total_records,
+        SUM(CASE WHEN datadesc = 'ขาย' THEN 1 ELSE 0 END) as sales_records,
+        SUM(CASE WHEN datadesc = 'ค่าส่ง' THEN 1 ELSE 0 END) as shipping_records,
+        SUM(CASE WHEN datadesc = 'ของแถม' THEN 1 ELSE 0 END) as free_records,
+        SUM(CASE WHEN datadesc = 'ขาย' THEN COALESCE(total, 0) ELSE 0 END) as total_amount
+      FROM \`${deliveriesTable.tableName}\`
+    `);
+    
+    const summary = summaryResult[0];
     
     res.render('dashboard/index', {
       title: 'Dashboard - ข้อมูลการจัดส่ง',
       deliveries: rows,
       summary: {
-        total: totalRecords,
-        sales: salesRecords,
-        shipping: shippingRecords,
-        free: freeRecords,
-        totalAmount: totalAmount
+        total: summary.total_records,
+        sales: summary.sales_records,
+        shipping: summary.shipping_records,
+        free: summary.free_records,
+        totalAmount: parseFloat(summary.total_amount || 0)
+      },
+      pagination: {
+        page,
+        limit,
+        total: countResult[0].total,
+        totalPages: Math.ceil(countResult[0].total / limit),
+        hasMore: offset + limit < countResult[0].total
       }
     });
   } catch (err) {
