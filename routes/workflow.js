@@ -928,10 +928,10 @@ router.post('/api/save-workflow', async (req, res, next) => {
       mapstat: '', // เก็บค่าว่าง
       uniqueid: '', // เก็บค่าว่าง
       accprint: 0, // ใช้ 0 แทน empty string สำหรับ numeric field
-      accprintd: '', // เก็บค่าว่าง
+      accprintd: null, // ใช้ null แทน empty string สำหรับ date field
       accprintt: '', // เก็บค่าว่าง
       nkprint: 0, // ใช้ 0 แทน empty string สำหรับ numeric field
-      nkprintd: '', // เก็บค่าว่าง
+      nkprintd: null, // ใช้ null แทน empty string สำหรับ date field
       nkprintt: '', // เก็บค่าว่าง
       routedate: null, // ใช้ null แทน empty string สำหรับ date field
       editno: '', // ค่าเริ่มต้นคือค่าว่าง แต่ถ้าหากรายการนี้มีการแก้ไข อยากให้รันเลขแก้ไข ให้บอกว่าเป็นการแก้ไข
