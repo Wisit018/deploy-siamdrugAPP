@@ -886,36 +886,36 @@ router.post('/api/save-workflow', async (req, res, next) => {
       prnsticker: false,
       prnstidate: null, // ใช้ null แทน '0000-00-00'
       prnstitime: '', // เก็บค่าว่าง
-      prnfinan: '', // เก็บค่าว่าง
+      prnfinan: 0, // ใช้ 0 แทน empty string สำหรับ integer field
       prnfindate: '', // เก็บค่าว่าง
       prnfintime: '', // เก็บค่าว่าง
-      payflag: '', // เก็บค่าว่าง
+      payflag: 0, // ใช้ 0 สำหรับ logical field
       paydate: '', // เก็บค่าว่าง
       paytime: '', // เก็บค่าว่าง
-      delvflag: '', // เก็บค่าว่าง
+      delvflag: 0, // ใช้ 0 สำหรับ logical field
       delvdate: '', // เก็บค่าว่าง
       delvtime: '', // เก็บค่าว่าง
       taxinv: '', // เก็บค่าว่าง
       transfer: false, // เก็บค่าเป็น false โดยตั้งไว้เป็น false ไว้ก่อน
-      scanflag: '', // เก็บค่าว่าง
+      scanflag: 0, // ใช้ 0 สำหรับ logical field
       scandate: '', // เก็บค่าว่าง
       scantime: '', // เก็บค่าว่าง
       scanby: '', // เก็บค่าว่าง
-      feed: '', // เก็บค่าว่าง
-      feedno: '', // เก็บค่าว่าง
-      feedback: '', // เก็บค่าว่าง
+      feed: 0, // ใช้ 0 สำหรับ logical field
+      feedno: 0, // ใช้ 0 สำหรับ numeric field
+      feedback: 0, // ใช้ 0 สำหรับ numeric field
       feeddesc: '', // เก็บค่าว่าง
       feeddate: '', // เก็บค่าว่าง
       feedtime: '', // เก็บค่าว่าง
       feedid: '', // เก็บค่าว่าง
       feedmemo: '',
-      weightloss: '', // เก็บค่าว่าง
-      weight: '', // เก็บค่าว่าง
+      weightloss: 0, // ใช้ 0 สำหรับ logical field
+      weight: 0, // ใช้ 0 สำหรับ logical field
       remark1: productData.shipping.notify1 || '', // เก็บข้อมูลจาก แจ้งจัดของ 1 ใน step 4/5
       remark2: productData.shipping.notify2 || '', // เก็บข้อมูลจาก แจ้งจัดของ 2 ใน step 4/5
-      statusid: '', // เก็บค่าว่าง
+      statusid: 0, // ใช้ 0 สำหรับ numeric field
       statusdesc: '', // เก็บค่าว่าง
-      finish: '', // เก็บค่าว่าง
+      finish: 0, // ใช้ 0 สำหรับ logical field
       mapstat: '', // เก็บค่าว่าง
       uniqueid: '', // เก็บค่าว่าง
       accprint: '', // เก็บค่าว่าง
