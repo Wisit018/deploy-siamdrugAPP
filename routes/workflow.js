@@ -568,6 +568,22 @@ router.post('/api/save-workflow', async (req, res, next) => {
       console.log('Customer lastname:', customerData?.lastname);
       console.log('Received productData:', productData);
       console.log('ProductData datadesc:', productData?.datadesc);
+      
+      // Fix missing prename - set default if not provided
+      if (!customerData.prename) {
+        customerData.prename = 'คุณ';
+        console.log('🔧 Fixed missing prename, set to default: คุณ');
+      }
+      
+      // Fix missing datadesc - set default for products
+      if (productData.products && productData.products.length > 0) {
+        productData.products.forEach((product, index) => {
+          if (!product.datadesc) {
+            product.datadesc = 'ขาย';
+            console.log(`🔧 Fixed missing datadesc for product ${index + 1}, set to: ขาย`);
+          }
+        });
+      }
 
     // Generate unique delivery number - get next number from database
     // ใช้เวลาไทย (UTC+7) ด้วย toLocaleString
@@ -600,9 +616,27 @@ router.post('/api/save-workflow', async (req, res, next) => {
       sum + (Number(item.price) || 0) * (Number(item.qty) || 0), 0);
     const discount = productData.products.reduce((sum, item) => 
       sum + (Number(item.discount) || 0), 0);
-    const shippingCost = productData.shipping.noCharge ? 0 : 
-      (Number(productData.shipping.shippingCost) || 0);
+    
+    // Fix shipping cost calculation
+    let shippingCost = 0;
+    if (productData.shipping && productData.shipping.noCharge) {
+      shippingCost = 0;
+      console.log('🚚 Shipping cost: 0 (no charge)');
+    } else if (productData.shipping && productData.shipping.shippingCost) {
+      shippingCost = Number(productData.shipping.shippingCost) || 0;
+      console.log(`🚚 Shipping cost: ${shippingCost}`);
+    } else {
+      shippingCost = 0;
+      console.log('🚚 Shipping cost: 0 (no shipping data)');
+    }
+    
     const total = Math.max(subtotal - discount + shippingCost, 0);
+    
+    console.log('💰 Calculation summary:');
+    console.log(`   Subtotal: ${subtotal}`);
+    console.log(`   Discount: ${discount}`);
+    console.log(`   Shipping: ${shippingCost}`);
+    console.log(`   Total: ${total}`);
 
     // Prepare legacy_deliveries record
     const deliveryRecord = {
@@ -918,15 +952,18 @@ router.post('/api/save-workflow', async (req, res, next) => {
           if (product.price === 0 || product.price === '0' || product.price === 0.00) {
             productRecord.datadesc = 'ของแถม';
             productRecord.datatype = 2; // ของแถม
+            console.log(`🎁 Product "${product.title}" marked as ของแถม (price: ${product.price})`);
           } else {
             productRecord.datadesc = 'ขาย';
             productRecord.datatype = 1; // ขาย
+            console.log(`💰 Product "${product.title}" marked as ขาย (price: ${product.price})`);
           }
           
           // Check for specific patterns in title
           if (product.title && (product.title.includes('(FREE)') || product.title.includes('FREE'))) {
             productRecord.datadesc = 'ของแถม';
             productRecord.datatype = 2; // ของแถม
+            console.log(`🎁 Product "${product.title}" marked as ของแถม (FREE in title)`);
           }
           
           // Set product-specific fields
@@ -941,28 +978,40 @@ router.post('/api/save-workflow', async (req, res, next) => {
         }
       }
       
-      // 2. Add shipping cost record if there are products and shipping cost > 0 and not marked as no charge
+      // 2. Add shipping cost record if there are products
       const shippingCostAmount = parseFloat(productData.shipping?.shippingCost || 0);
       const noCharge = productData.shipping?.noCharge || false;
-      console.log('Shipping cost amount:', shippingCostAmount);
-      console.log('No charge flag:', noCharge);
-      console.log('Shipping data:', productData.shipping);
+      console.log('🚚 Shipping cost amount:', shippingCostAmount);
+      console.log('🚚 No charge flag:', noCharge);
+      console.log('🚚 Shipping data:', productData.shipping);
       
-      // Always add shipping record if there are products, regardless of cost
+      // Always add shipping record if there are products
       if (recordsToInsert.length > 0) {
         const shippingRecord = { ...deliveryRecord };
-        shippingRecord.datadesc = 'ค่าส่ง';
-        shippingRecord.datatype = 11; // ค่าส่ง
-        shippingRecord.code = '11344';
-        shippingRecord.title = 'ไม่คิดค่าส่ง';
-        shippingRecord.cost = 0.00;
-        shippingRecord.price = 0.00;
-        shippingRecord.amount = 0.00;
+        
+        if (noCharge || shippingCostAmount === 0) {
+          shippingRecord.datadesc = 'ค่าส่ง';
+          shippingRecord.datatype = 11; // ค่าส่ง
+          shippingRecord.code = '11344';
+          shippingRecord.title = 'ไม่คิดค่าส่ง';
+          shippingRecord.cost = 0.00;
+          shippingRecord.price = 0.00;
+          shippingRecord.amount = 0.00;
+          console.log('🚚 Added free shipping record');
+        } else {
+          shippingRecord.datadesc = 'ค่าส่ง';
+          shippingRecord.datatype = 11; // ค่าส่ง
+          shippingRecord.code = '11344';
+          shippingRecord.title = 'ค่าส่ง';
+          shippingRecord.cost = shippingCostAmount;
+          shippingRecord.price = shippingCostAmount;
+          shippingRecord.amount = shippingCostAmount;
+          console.log(`🚚 Added paid shipping record: ${shippingCostAmount} บาท`);
+        }
         
         recordsToInsert.push(shippingRecord);
-        console.log('Added shipping record (always added when products exist)');
       } else {
-        console.log('No shipping cost record added - no products found');
+        console.log('🚚 No shipping record added - no products found');
       }
       
       // If no products, create a default record
